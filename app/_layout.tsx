@@ -2,10 +2,10 @@ import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import {
@@ -32,11 +32,20 @@ export default function RootLayout() {
 
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
+  const [showStartup, setShowStartup] = useState(Platform.OS !== "web");
+  const startupOpacity = useRef(new Animated.Value(1)).current;
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    Animated.timing(startupOpacity, { toValue: 0, duration: 320, delay: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    const timeout = setTimeout(() => setShowStartup(false), 900);
+    return () => clearTimeout(timeout);
+  }, [startupOpacity]);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
     setInsets(metrics.insets);
@@ -95,6 +104,19 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 
+  const brandedContent = (
+    <View style={styles.root}>
+      {content}
+      {showStartup && (
+        <Animated.View style={[styles.startup, { opacity: startupOpacity }]}>
+          <View style={styles.startupIcon}><Text style={styles.startupGlyph}>⌁</Text></View>
+          <Text style={styles.startupTitle}>Smart Message</Text>
+          <Text style={styles.startupSub}>AUDIO PLAYER</Text>
+        </Animated.View>
+      )}
+    </View>
+  );
+
   const shouldOverrideSafeArea = Platform.OS === "web";
 
   if (shouldOverrideSafeArea) {
@@ -103,7 +125,7 @@ export default function RootLayout() {
         <SafeAreaProvider initialMetrics={providerInitialMetrics}>
           <SafeAreaFrameContext.Provider value={frame}>
             <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
+              {brandedContent}
             </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
@@ -113,7 +135,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{brandedContent}</SafeAreaProvider>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  startup: { ...StyleSheet.absoluteFillObject, backgroundColor: "#14211F", alignItems: "center", justifyContent: "center", zIndex: 20 },
+  startupIcon: { width: 62, height: 62, borderRadius: 22, backgroundColor: "#D8F2E4", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  startupGlyph: { color: "#1D8C5F", fontSize: 38, lineHeight: 38, fontWeight: "800" },
+  startupTitle: { color: "#FFFFFF", fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
+  startupSub: { color: "#8EB7A4", fontSize: 10, fontWeight: "800", letterSpacing: 3, marginTop: 7 },
+});

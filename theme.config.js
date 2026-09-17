@@ -1,12 +1,12 @@
 /** @type {const} */
 const themeColors = {
-  primary: { light: '#0a7ea4', dark: '#0a7ea4' },
-  background: { light: '#ffffff', dark: '#151718' },
-  surface: { light: '#f5f5f5', dark: '#1e2022' },
-  foreground: { light: '#11181C', dark: '#ECEDEE' },
-  muted: { light: '#687076', dark: '#9BA1A6' },
-  border: { light: '#E5E7EB', dark: '#334155' },
-  success: { light: '#22C55E', dark: '#4ADE80' },
+  primary: { light: '#1D8C5F', dark: '#78D7A6' },
+  background: { light: '#F6F8F5', dark: '#14211F' },
+  surface: { light: '#FFFFFF', dark: '#1D2D28' },
+  foreground: { light: '#14211F', dark: '#F2F7F3' },
+  muted: { light: '#6E7C78', dark: '#B6C5BE' },
+  border: { light: '#E5ECE7', dark: '#33443E' },
+  success: { light: '#1D8C5F', dark: '#78D7A6' },
   warning: { light: '#F59E0B', dark: '#FBBF24' },
   error: { light: '#EF4444', dark: '#F87171' },
 };

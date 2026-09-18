@@ -6,7 +6,7 @@ import { normalizeForSpeech } from "./message-store";
 export type Esp32Result = { ok: true; detail: string } | { ok: false; detail: string };
 
 const nativeAudio = NativeModules.SmartMessageAudio as
-  | { synthesizeToWav: (text: string, fileName: string) => Promise<string> }
+  | { synthesizeToWav: (text: string, fileName: string, rate: number) => Promise<string> }
   | undefined;
 
 function normalizeBaseUrl(value: string) {
@@ -37,7 +37,13 @@ export async function synthesizeToWav(text: string, fileName: string) {
   if (!nativeAudio?.synthesizeToWav) {
     throw new Error("This build does not include the Android TTS-to-WAV module yet.");
   }
-  return nativeAudio.synthesizeToWav(normalizeForSpeech(text), fileName);
+  return nativeAudio.synthesizeToWav(normalizeForSpeech(text), fileName, 1);
+}
+
+export async function synthesizeToWavWithRate(text: string, fileName: string, rate: 0.5 | 1 | 2) {
+  if (Platform.OS === "web") throw new Error("WAV generation requires an Android build with the SmartMessageAudio native module.");
+  if (!nativeAudio?.synthesizeToWav) throw new Error("This build does not include the Android TTS-to-WAV module yet.");
+  return nativeAudio.synthesizeToWav(normalizeForSpeech(text), fileName, rate);
 }
 
 export async function sendWavToEsp32(baseUrl: string, wavUri: string): Promise<Esp32Result> {
@@ -61,9 +67,9 @@ export async function sendWavToEsp32(baseUrl: string, wavUri: string): Promise<E
   }
 }
 
-export async function deliverMessage(baseUrl: string, text: string, id: string): Promise<Esp32Result> {
+export async function deliverMessage(baseUrl: string, text: string, id: string, rate: 0.5 | 1 | 2 = 1): Promise<Esp32Result> {
   const status = await checkEsp32(baseUrl);
   if (!status.ok) return status;
-  const wavUri = await synthesizeToWav(text, `smart-message-${id}.wav`);
+  const wavUri = await synthesizeToWavWithRate(text, `smart-message-${id}.wav`, rate);
   return sendWavToEsp32(baseUrl, wavUri);
 }

@@ -128,10 +128,11 @@ export default function HomeScreen() {
 
   const connect = async () => {
     setStatus("connecting");
-    setStatusDetail("Checking the ESP32 status endpoint…");
+    setStatusDetail("Open Settings to pair the ESP32 speaker with phone Bluetooth.");
+    router.push("/settings" as never);
+    setStatus("unknown");
     const result = await checkEsp32(settings.esp32BaseUrl);
-    setStatus(result.ok ? "connected" : "disconnected");
-    setStatusDetail(result.detail);
+    if (result.ok) setStatusDetail("Bluetooth pairing is ready; Wi-Fi fallback also responds.");
     if (Platform.OS !== "web") {
       await Haptics.notificationAsync(result.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
     }
@@ -143,7 +144,8 @@ export default function HomeScreen() {
     setPreviewingId(message.id);
     Speech.speak(normalizeForSpeech(message.text), {
       language: languageFor(message.text),
-      rate: 0.9,
+      rate: settings.speechRate,
+      ...(settings.ttsVoiceId ? { voice: settings.ttsVoiceId } : {}),
       onDone: () => setPreviewingId(null),
       onStopped: () => setPreviewingId(null),
       onError: () => setPreviewingId(null),
@@ -161,7 +163,7 @@ export default function HomeScreen() {
     setMessages(sending);
     await saveMessages(sending);
     try {
-      const result = await deliverMessage(settings.esp32BaseUrl, message.text, message.id);
+      const result = await deliverMessage(settings.esp32BaseUrl, message.text, message.id, settings.speechRate);
       if (result.ok) {
         const remaining = sending.filter((item) => item.id !== message.id);
         setMessages(remaining);
@@ -253,7 +255,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.statusCopy}>
                     <View style={styles.statusTitleRow}>
-                      <Text style={styles.statusTitle}>ESP32 speaker</Text>
+                    <Text style={styles.statusTitle}>Phone Bluetooth</Text>
                       <View style={[styles.statusPill, status === "connected" ? styles.connectedPill : status === "connecting" ? styles.connectingPill : styles.neutralPill]}>
                         <View style={[styles.statusDot, status === "connected" ? styles.connectedDot : status === "connecting" ? styles.connectingDot : styles.neutralDot]} />
                         <Text style={styles.statusPillText}>{status === "connected" ? "Connected" : status === "connecting" ? "Checking" : "Not checked"}</Text>
@@ -263,10 +265,10 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <View style={styles.statusBottomRow}>
-                  <Text style={styles.endpoint} numberOfLines={1}>{settings.esp32BaseUrl}</Text>
-                  <Pressable accessibilityRole="button" onPress={status === "connected" ? () => { setStatus("unknown"); setStatusDetail("Disconnected locally. Connect to check again."); } : connect} style={({ pressed }) => [styles.connectButton, pressed && styles.pressed]}>
-                    {status === "connecting" ? <ActivityIndicator size="small" color="#FFFFFF" /> : <MaterialIcons name={status === "connected" ? "link-off" : "link"} size={17} color="#FFFFFF" />}
-                    <Text style={styles.connectButtonText}>{status === "connected" ? "Disconnect" : "Connect"}</Text>
+                  <Text style={styles.endpoint} numberOfLines={1}>{settings.bluetoothDeviceName || "ESP32 speaker"}</Text>
+                  <Pressable accessibilityRole="button" onPress={connect} style={({ pressed }) => [styles.connectButton, pressed && styles.pressed]}>
+                    <MaterialIcons name="bluetooth" size={17} color="#FFFFFF" />
+                    <Text style={styles.connectButtonText}>Pair in Settings</Text>
                   </Pressable>
                 </View>
               </View>

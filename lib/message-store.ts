@@ -13,7 +13,11 @@ export type PendingMessage = {
 
 export type AppSettings = {
   esp32BaseUrl: string;
+  connectionMode: "bluetooth" | "wifi";
+  bluetoothDeviceName: string;
   notificationAccessEnabled: boolean;
+  ttsVoiceId: string;
+  speechRate: 0.5 | 1 | 2;
   manualHistory: string[];
 };
 
@@ -22,7 +26,11 @@ const SETTINGS_KEY = "smart-message-audio.settings.v1";
 
 export const DEFAULT_SETTINGS: AppSettings = {
   esp32BaseUrl: "http://192.168.1.50:8080",
+  connectionMode: "bluetooth",
+  bluetoothDeviceName: "ESP32 speaker",
   notificationAccessEnabled: false,
+  ttsVoiceId: "",
+  speechRate: 1,
   manualHistory: [],
 };
 

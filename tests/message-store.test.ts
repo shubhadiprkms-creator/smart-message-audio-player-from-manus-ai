@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSummaryNotification, makeMessageId, normalizeForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
+import { DEFAULT_SETTINGS, isSummaryNotification, makeMessageId, normalizeForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -27,5 +27,11 @@ describe("message filtering", () => {
     ];
     expect(removeMessage(messages, "two")).toEqual([messages[0]]);
     expect(removeMessage(messages, "missing")).toEqual(messages);
+  });
+
+  it("defaults to Bluetooth pairing and normal speech speed", () => {
+    expect(DEFAULT_SETTINGS.connectionMode).toBe("bluetooth");
+    expect(DEFAULT_SETTINGS.speechRate).toBe(1);
+    expect(DEFAULT_SETTINGS.ttsVoiceId).toBe("");
   });
 });

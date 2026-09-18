@@ -71,6 +71,14 @@ export function normalizeForSpeech(text: string) {
   return text.replace(/\b\d{4,}\b/g, (digits) => digits.split("").join(" "));
 }
 
+export function previewForSpeech(text: string, rate: 0.5 | 1 | 2) {
+  const normalized = normalizeForSpeech(text).trim();
+  const maxCharacters = Math.round(75 * rate);
+  if (normalized.length <= maxCharacters) return normalized;
+  const excerpt = normalized.slice(0, maxCharacters).replace(/\s+\S*$/, "").trim();
+  return `${excerpt || normalized.slice(0, maxCharacters).trim()}…`;
+}
+
 export function isSummaryNotification(text: string) {
   const normalized = text.trim().toLowerCase();
   return (

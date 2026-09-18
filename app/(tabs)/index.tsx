@@ -25,6 +25,7 @@ import {
   loadSettings,
   makeMessageId,
   normalizeForSpeech,
+  previewForSpeech,
   removeMessage,
   saveMessages,
   saveSettings,
@@ -142,7 +143,7 @@ export default function HomeScreen() {
     if (previewTimeout.current) clearTimeout(previewTimeout.current);
     await Speech.stop();
     setPreviewingId(message.id);
-    Speech.speak(normalizeForSpeech(message.text), {
+    Speech.speak(previewForSpeech(message.text, settings.speechRate), {
       language: languageFor(message.text),
       rate: settings.speechRate,
       ...(settings.ttsVoiceId ? { voice: settings.ttsVoiceId } : {}),
@@ -303,7 +304,7 @@ export default function HomeScreen() {
               <Text style={styles.messageText}>{item.text}</Text>
               {item.lastError && <Text style={styles.errorText}>{item.lastError}</Text>}
               <View style={styles.messageActions}>
-                <ActionButton label={previewingId === item.id ? "Playing" : "Preview"} icon={previewingId === item.id ? "volume-up" : "play-arrow"} secondary onPress={() => preview(item)} disabled={!!sendingId} />
+                <ActionButton label={previewingId === item.id ? "Playing" : "Preview · 5s"} icon={previewingId === item.id ? "volume-up" : "play-arrow"} secondary onPress={() => preview(item)} disabled={!!sendingId} />
                 <ActionButton label={sendingId === item.id ? "Sending…" : "Send to speaker"} icon="send" onPress={() => send(item)} disabled={!!sendingId} />
                 <Pressable accessibilityRole="button" accessibilityLabel={`Delete message from ${item.sender}`} onPress={() => deleteMessage(item.id)} disabled={!!sendingId} style={({ pressed }) => [styles.deleteButton, !!sendingId && styles.disabledButton, pressed && styles.pressed]}>
                   <MaterialIcons name="delete-outline" size={18} color={palette.red} />

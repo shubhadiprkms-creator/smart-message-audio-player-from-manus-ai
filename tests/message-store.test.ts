@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, isSummaryNotification, makeMessageId, normalizeForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
+import { DEFAULT_SETTINGS, isSummaryNotification, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -33,5 +33,13 @@ describe("message filtering", () => {
     expect(DEFAULT_SETTINGS.connectionMode).toBe("bluetooth");
     expect(DEFAULT_SETTINGS.speechRate).toBe(1);
     expect(DEFAULT_SETTINGS.ttsVoiceId).toBe("");
+  });
+
+  it("limits previews to a short rate-aware excerpt", () => {
+    const message = "This is a deliberately long message that should never be spoken in full during the quick preview because the user only needs a short sample.";
+    const preview = previewForSpeech(message, 1);
+    expect(preview.endsWith("…")).toBe(true);
+    expect(preview.length).toBeLessThan(message.length);
+    expect(previewForSpeech("Short note", 1)).toBe("Short note");
   });
 });

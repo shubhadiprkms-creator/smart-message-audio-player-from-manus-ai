@@ -74,7 +74,7 @@ export default function SettingsScreen() {
   return (
     <ScreenContainer containerClassName="bg-background" edges={["top", "bottom", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.nav}><Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><MaterialIcons name="arrow-back" size={22} color={colors.foreground} /></Pressable><Text style={[styles.navTitle, { color: colors.foreground }]}>Settings</Text><View style={styles.navSpacer} /></View>
+        <View style={styles.nav}><Pressable accessibilityRole="button" accessibilityLabel="Back to Home" onPress={() => router.replace("/" as never)} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><MaterialIcons name="arrow-back" size={22} color={colors.foreground} /></Pressable><Text style={[styles.navTitle, { color: colors.foreground }]}>Settings</Text><View style={styles.navSpacer} /></View>
         <Text style={styles.intro}>Connect your phone to the ESP32 speaker and tune how every message is spoken.</Text>
 
         <View style={styles.sectionCard}>

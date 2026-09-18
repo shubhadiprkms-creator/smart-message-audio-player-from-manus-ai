@@ -1,4 +1,4 @@
-name: Build React Native APK
+name: Dynamic Android APK Build
 
 on:
   push:
@@ -23,31 +23,29 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps || true
 
-      - name: Generate Android folder (if Expo)
-        run: npx expo prebuild --platform android || true
-
-      - name: Make gradlew executable
+      - name: Find and Build Gradle
         run: |
-          if [ -d "android" ]; then
-            chmod +x android/gradlew
-          else
-            chmod +x gradlew
+          # gradlew ফাইলটি পুরো প্রজেক্টে খুঁজে বের করবে
+          GRADLEW_PATH=$(find . -name "gradlew" -type f | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "ERROR: Could not find gradlew in the repository!"
+            echo "Printing repository file structure:"
+            ls -R
+            exit 1
           fi
-
-      - name: Build Android APK
-        run: |
-          if [ -d "android" ]; then
-            cd android && ./gradlew assembleDebug --no-daemon
-          else
-            ./gradlew assembleDebug --no-daemon
-          fi
+          
+          GRADLE_DIR=$(dirname "$GRADLEW_PATH")
+          echo "Found gradlew at: $GRADLEW_PATH"
+          
+          chmod +x "$GRADLEW_PATH"
+          cd "$GRADLE_DIR"
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/app-debug.apk
+          path: "/**/build/outputs/apk/debug/*.apk"

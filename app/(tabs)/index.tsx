@@ -25,6 +25,7 @@ import {
   loadSettings,
   makeMessageId,
   normalizeForSpeech,
+  removeMessage,
   saveMessages,
   saveSettings,
   type AppSettings,
@@ -204,6 +205,18 @@ export default function HomeScreen() {
     await Promise.all([saveMessages(next), saveSettings(nextSettings)]);
   };
 
+  const deleteMessage = async (messageId: string) => {
+    if (sendingId === messageId) return;
+    if (previewingId === messageId) {
+      await Speech.stop();
+      setPreviewingId(null);
+    }
+    const next = removeMessage(messages, messageId);
+    setMessages(next);
+    await saveMessages(next);
+    if (Platform.OS !== "web") await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const refresh = async () => {
     setRefreshing(true);
     await hydrate();
@@ -290,6 +303,9 @@ export default function HomeScreen() {
               <View style={styles.messageActions}>
                 <ActionButton label={previewingId === item.id ? "Playing" : "Preview"} icon={previewingId === item.id ? "volume-up" : "play-arrow"} secondary onPress={() => preview(item)} disabled={!!sendingId} />
                 <ActionButton label={sendingId === item.id ? "Sending…" : "Send to speaker"} icon="send" onPress={() => send(item)} disabled={!!sendingId} />
+                <Pressable accessibilityRole="button" accessibilityLabel={`Delete message from ${item.sender}`} onPress={() => deleteMessage(item.id)} disabled={!!sendingId} style={({ pressed }) => [styles.deleteButton, !!sendingId && styles.disabledButton, pressed && styles.pressed]}>
+                  <MaterialIcons name="delete-outline" size={18} color={palette.red} />
+                </Pressable>
               </View>
             </View>
           )}
@@ -363,6 +379,7 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: "#EDF7F0" },
   actionLabel: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
   secondaryLabel: { color: palette.mintStrong },
+  deleteButton: { width: 42, minHeight: 40, borderRadius: 11, backgroundColor: "#FCEBE9", alignItems: "center", justifyContent: "center" },
   disabledButton: { opacity: 0.45 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   emptyState: { alignItems: "center", paddingHorizontal: 30, paddingTop: 24, paddingBottom: 8 },

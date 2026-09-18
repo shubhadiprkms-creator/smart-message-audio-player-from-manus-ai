@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSummaryNotification, makeMessageId, normalizeForSpeech } from "../lib/message-store";
+import { isSummaryNotification, makeMessageId, normalizeForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -18,5 +18,14 @@ describe("message filtering", () => {
   it("includes event metadata in a stable message key", () => {
     expect(makeMessageId("Rahim", "Hello", 123)).toBe("123-Rahim-Hello");
     expect(makeMessageId("Rahim", "Hello", 124)).not.toBe(makeMessageId("Rahim", "Hello", 123));
+  });
+
+  it("removes only the selected pending message", () => {
+    const messages: PendingMessage[] = [
+      { id: "one", sender: "A", text: "Keep me", receivedAt: 1, status: "pending" },
+      { id: "two", sender: "B", text: "Delete me", receivedAt: 2, status: "pending" },
+    ];
+    expect(removeMessage(messages, "two")).toEqual([messages[0]]);
+    expect(removeMessage(messages, "missing")).toEqual(messages);
   });
 });

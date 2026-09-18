@@ -41,6 +41,10 @@ export async function saveMessages(messages: PendingMessage[]) {
   await AsyncStorage.setItem(MESSAGE_KEY, JSON.stringify(messages));
 }
 
+export function removeMessage(messages: PendingMessage[], messageId: string) {
+  return messages.filter((message) => message.id !== messageId);
+}
+
 export async function loadSettings(): Promise<AppSettings> {
   const value = await AsyncStorage.getItem(SETTINGS_KEY);
   if (!value) return DEFAULT_SETTINGS;

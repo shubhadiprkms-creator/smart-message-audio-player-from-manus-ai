@@ -94,3 +94,9 @@ export function isSummaryNotification(text: string) {
 export function makeMessageId(sender: string, text: string, timestamp = Date.now()) {
   return `${timestamp}-${sender}-${text}`.replace(/\s+/g, "-").slice(0, 160);
 }
+
+export function createManualMessage(text: string, timestamp = Date.now()): PendingMessage | null {
+  const normalized = text.trim();
+  if (!normalized || isSummaryNotification(normalized)) return null;
+  return { id: makeMessageId("Manual note", normalized, timestamp), sender: "Manual note", text: normalized, receivedAt: timestamp, status: "pending" };
+}

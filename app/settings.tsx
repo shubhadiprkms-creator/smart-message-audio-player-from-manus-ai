@@ -30,7 +30,6 @@ export default function SettingsScreen() {
   const [voices, setVoices] = useState<Voice[]>([]);
 
   useEffect(() => {
-    loadSettings().then((stored) => { setSettings(stored); setAddress(stored.esp32BaseUrl); });
     Speech.getAvailableVoicesAsync().then((available) => {
       setVoices(available.filter((voice) => /^(en|bn)/i.test(voice.language)).slice(0, 6).map((voice) => ({ identifier: voice.identifier, name: voice.name, language: voice.language })));
     }).catch(() => setVoices([]));
@@ -38,9 +37,12 @@ export default function SettingsScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    readNotificationAccess().then((access) => {
-      if (!active || access === null) return;
-      setSettings((current) => { const next = { ...current, notificationAccessEnabled: access }; void saveSettings(next); return next; });
+    Promise.all([loadSettings(), readNotificationAccess()]).then(([stored, access]) => {
+      if (!active) return;
+      const next = access === null ? stored : { ...stored, notificationAccessEnabled: access };
+      setSettings(next);
+      setAddress(next.esp32BaseUrl);
+      if (access !== null) void saveSettings(next);
     });
     return () => { active = false; };
   }, []));

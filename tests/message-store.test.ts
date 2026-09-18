@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, isSummaryNotification, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
+import { DEFAULT_SETTINGS, createManualMessage, isSummaryNotification, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -41,5 +41,11 @@ describe("message filtering", () => {
     expect(preview.endsWith("…")).toBe(true);
     expect(preview.length).toBeLessThan(message.length);
     expect(previewForSpeech("Short note", 1)).toBe("Short note");
+  });
+
+  it("creates manual messages as pending without sending them", () => {
+    const message = createManualMessage("  Call me when you arrive.  ", 456);
+    expect(message).toMatchObject({ sender: "Manual note", text: "Call me when you arrive.", receivedAt: 456, status: "pending" });
+    expect(createManualMessage("2 new messages", 457)).toBeNull();
   });
 });

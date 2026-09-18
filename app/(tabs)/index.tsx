@@ -20,11 +20,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { checkEsp32, deliverMessage } from "@/lib/esp32";
 import {
   DEFAULT_SETTINGS,
-  isSummaryNotification,
+  createManualMessage,
   loadMessages,
   loadSettings,
-  makeMessageId,
-  normalizeForSpeech,
   previewForSpeech,
   removeMessage,
   saveMessages,
@@ -97,6 +95,7 @@ export default function HomeScreen() {
   const [statusDetail, setStatusDetail] = useState("Connect to confirm the speaker is reachable.");
   const [isRefreshing, setRefreshing] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [manualNotice, setManualNotice] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const previewTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,17 +191,12 @@ export default function HomeScreen() {
 
   const addManualMessage = async () => {
     const text = manualText.trim();
-    if (!text || isSummaryNotification(text)) return;
-    const message: PendingMessage = {
-      id: makeMessageId("Manual note", text),
-      sender: "Manual note",
-      text,
-      receivedAt: Date.now(),
-      status: "pending",
-    };
+    const message = createManualMessage(text);
+    if (!message) return;
     const next = [...messages, message];
     setMessages(next);
     setManualText("");
+    setManualNotice("Added to pending queue. Tap Send to speaker when you are ready.");
     const nextSettings = { ...settings, manualHistory: [text, ...settings.manualHistory.filter((item) => item !== text)].slice(0, 8) };
     setSettings(nextSettings);
     await Promise.all([saveMessages(next), saveSettings(nextSettings)]);
@@ -315,9 +309,10 @@ export default function HomeScreen() {
           ListEmptyComponent={<View style={styles.emptyState}><View style={styles.emptyIcon}><MaterialIcons name="mark-email-read" size={28} color={palette.mintStrong} /></View><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing waiting</Text><Text style={[styles.emptyBody, { color: colors.muted }]}>New messages will appear here after Message Access is enabled.</Text></View>}
           ListFooterComponent={
             <View style={styles.manualCard}>
-              <View style={styles.manualHeading}><View><Text style={styles.manualTitle}>Send a message manually</Text><Text style={styles.manualSub}>Paste old text to test the speaker anytime.</Text></View><MaterialIcons name="edit-note" size={24} color={palette.mintStrong} /></View>
-              <TextInput value={manualText} onChangeText={setManualText} placeholder="Type or paste a message…" placeholderTextColor="#9BA8A3" multiline maxLength={600} style={styles.manualInput} />
-              <Pressable accessibilityRole="button" disabled={!manualText.trim()} onPress={addManualMessage} style={({ pressed }) => [styles.addButton, !manualText.trim() && styles.disabledButton, pressed && styles.pressed]}><MaterialIcons name="add" size={18} color="#FFFFFF" /><Text style={styles.addButtonText}>Add to pending queue</Text></Pressable>
+              <View style={styles.manualHeading}><View><Text style={styles.manualTitle}>Add a manual message</Text><Text style={styles.manualSub}>It will stay pending until you tap Send to speaker.</Text></View><MaterialIcons name="edit-note" size={24} color={palette.mintStrong} /></View>
+              <TextInput value={manualText} onChangeText={(value) => { setManualText(value); setManualNotice(null); }} placeholder="Type or paste a message…" placeholderTextColor="#9BA8A3" multiline maxLength={600} style={styles.manualInput} />
+              <Pressable accessibilityRole="button" disabled={!manualText.trim()} onPress={addManualMessage} style={({ pressed }) => [styles.addButton, !manualText.trim() && styles.disabledButton, pressed && styles.pressed]}><MaterialIcons name="add" size={18} color="#FFFFFF" /><Text style={styles.addButtonText}>Add as pending message</Text></Pressable>
+              {manualNotice && <Text style={styles.manualNotice}>{manualNotice}</Text>}
             </View>
           }
         />
@@ -396,4 +391,5 @@ const styles = StyleSheet.create({
   manualInput: { minHeight: 78, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: palette.line, borderRadius: 13, marginTop: 13, padding: 12, color: palette.ink, fontSize: 14, lineHeight: 20, textAlignVertical: "top" },
   addButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: palette.ink, borderRadius: 12, minHeight: 41, marginTop: 10 },
   addButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
+  manualNotice: { color: palette.mintStrong, fontSize: 11, lineHeight: 16, fontWeight: "700", marginTop: 10 },
 });

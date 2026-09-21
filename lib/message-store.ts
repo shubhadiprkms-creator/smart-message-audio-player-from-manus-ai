@@ -71,6 +71,36 @@ export function normalizeForSpeech(text: string) {
   return text.replace(/\b\d{4,}\b/g, (digits) => digits.split("").join(" "));
 }
 
+export type SpeechLanguage = "en-IN" | "bn-IN" | "hi-IN";
+
+export function languageForSpeech(text: string): SpeechLanguage {
+  if (/[\u0980-\u09FF]/.test(text)) return "bn-IN";
+  if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
+  return "en-IN";
+}
+
+export function speechSegments(text: string) {
+  const normalized = normalizeForSpeech(text).trim();
+  const segments: { text: string; language: SpeechLanguage }[] = [];
+  let currentLanguage: SpeechLanguage = "en-IN";
+  let buffer = "";
+  for (const character of Array.from(normalized)) {
+    const characterLanguage: SpeechLanguage = /[\u0980-\u09FF]/.test(character)
+      ? "bn-IN"
+      : /[\u0900-\u097F]/.test(character)
+        ? "hi-IN"
+        : currentLanguage;
+    if (characterLanguage !== currentLanguage && buffer.trim()) {
+      segments.push({ text: buffer.trim(), language: currentLanguage });
+      buffer = "";
+    }
+    currentLanguage = characterLanguage;
+    buffer += character;
+  }
+  if (buffer.trim()) segments.push({ text: buffer.trim(), language: currentLanguage });
+  return segments;
+}
+
 export function previewForSpeech(text: string, rate: 0.5 | 1 | 2) {
   const normalized = normalizeForSpeech(text).trim();
   const maxCharacters = Math.round(75 * rate);

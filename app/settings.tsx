@@ -99,7 +99,7 @@ export default function SettingsScreen() {
           </View>
           <Text style={styles.fieldLabel}>Speech speed</Text>
           <View style={styles.speedRow}>{speeds.map((speed) => <Pressable key={speed} onPress={() => updateSettings({ speechRate: speed })} style={[styles.speedButton, settings.speechRate === speed && styles.speedSelected]}><Text style={[styles.speedText, settings.speechRate === speed && styles.speedTextSelected]}>{speed}x</Text></Pressable>)}</View>
-          <Text style={styles.helper}>0.5x is slower for clarity, 1x is normal, and 2x is faster. Quick previews are limited to about 5 seconds; full message delivery is unchanged.</Text>
+          <Text style={styles.helper}>Banglish, Hinglish, Bengali, Hindi, and English text are supported. 0.5x is slower for clarity, 1x is normal, and 2x is faster. Quick previews are limited to about 5 seconds.</Text>
         </View>
 
         <View style={styles.sectionCard}>

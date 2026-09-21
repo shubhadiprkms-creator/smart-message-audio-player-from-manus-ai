@@ -27,6 +27,7 @@ import {
   removeMessage,
   saveMessages,
   saveSettings,
+  speechSegments,
   type AppSettings,
   type PendingMessage,
 } from "@/lib/message-store";
@@ -49,10 +50,6 @@ type EspStatus = "unknown" | "connecting" | "connected" | "disconnected";
 
 function formatTime(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(timestamp);
-}
-
-function languageFor(text: string) {
-  return /[\u0980-\u09FF]/.test(text) ? "bn-IN" : "en-IN";
 }
 
 function ActionButton({
@@ -99,6 +96,7 @@ export default function HomeScreen() {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const previewTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewRun = useRef(0);
 
   const pendingCount = messages.length;
   const sortedMessages = useMemo(() => [...messages].sort((a, b) => a.receivedAt - b.receivedAt), [messages]);
@@ -116,6 +114,7 @@ export default function HomeScreen() {
     hydrate();
     return () => {
       if (previewTimeout.current) clearTimeout(previewTimeout.current);
+      previewRun.current += 1;
       Speech.stop();
     };
   }, [hydrate]);
@@ -140,17 +139,30 @@ export default function HomeScreen() {
 
   const preview = async (message: PendingMessage) => {
     if (previewTimeout.current) clearTimeout(previewTimeout.current);
+    const run = ++previewRun.current;
     await Speech.stop();
     setPreviewingId(message.id);
-    Speech.speak(previewForSpeech(message.text, settings.speechRate), {
-      language: languageFor(message.text),
-      rate: settings.speechRate,
-      ...(settings.ttsVoiceId ? { voice: settings.ttsVoiceId } : {}),
-      onDone: () => setPreviewingId(null),
-      onStopped: () => setPreviewingId(null),
-      onError: () => setPreviewingId(null),
-    });
+    const segments = speechSegments(previewForSpeech(message.text, settings.speechRate));
+    let segmentIndex = 0;
+    const speakNext = () => {
+      if (run !== previewRun.current || segmentIndex >= segments.length) {
+        if (run === previewRun.current) setPreviewingId(null);
+        return;
+      }
+      const segment = segments[segmentIndex++];
+      Speech.speak(segment.text, {
+        language: segment.language,
+        rate: settings.speechRate,
+        ...(settings.ttsVoiceId ? { voice: settings.ttsVoiceId } : {}),
+        onDone: () => { if (run === previewRun.current) setTimeout(speakNext, 40); },
+        onStopped: () => { if (run === previewRun.current) setPreviewingId(null); },
+        onError: () => { if (run === previewRun.current) setPreviewingId(null); },
+      });
+    };
+    speakNext();
     previewTimeout.current = setTimeout(async () => {
+      if (run !== previewRun.current) return;
+      previewRun.current += 1;
       await Speech.stop();
       setPreviewingId(null);
     }, 5000);

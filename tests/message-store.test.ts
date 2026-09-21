@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, createManualMessage, isSummaryNotification, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, type PendingMessage } from "../lib/message-store";
+import { DEFAULT_SETTINGS, createManualMessage, isSummaryNotification, languageForSpeech, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, speechSegments, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -47,5 +47,12 @@ describe("message filtering", () => {
     const message = createManualMessage("  Call me when you arrive.  ", 456);
     expect(message).toMatchObject({ sender: "Manual note", text: "Call me when you arrive.", receivedAt: 456, status: "pending" });
     expect(createManualMessage("2 new messages", 457)).toBeNull();
+  });
+
+  it("routes Bengali, Hindi, and Latin mixed-language text to speech locales", () => {
+    expect(languageForSpeech("Ami ekhane achi, call me later")).toBe("en-IN");
+    expect(languageForSpeech("আমি এখানে আছি")).toBe("bn-IN");
+    expect(languageForSpeech("मैं यहाँ हूँ")).toBe("hi-IN");
+    expect(speechSegments("Ami এখানে আছি").map((segment) => segment.language)).toEqual(["en-IN", "bn-IN"]);
   });
 });

@@ -85,20 +85,36 @@ export function languageForSpeech(text: string): SpeechLanguage {
   if (/[\u0980-\u09FF]/.test(text)) return "bn-IN";
   if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
   const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
-  const banglishWords = new Set(["ami", "amra", "tumi", "tomar", "amar", "apni", "kemon", "achi", "bhalo", "ekhane", "okhane", "jabo", "jacchi", "asbo", "shuno", "bolo", "kotha", "keno", "ki", "na", "hobe", "kore"]);
+  const banglishWords = new Set(["ami", "amra", "tumi", "tomake", "tomar", "amar", "apni", "apnake", "kemon", "acho", "achi", "bhalo", "bhalobashi", "ekhane", "okhane", "kothay", "jabo", "jacchi", "asbo", "aschi", "ekhuni", "ekhon", "shuno", "bolo", "korcho", "korchi", "kotha", "keno", "ki", "na", "hobe", "kore", "parbo", "parena", "lagbe", "dorkar", "dhonnobad", "aj", "kal", "rat", "sokal", "bari", "kaj", "khabar", "pani", "phone", "message", "whatsapp", "meeting", "asho", "jao", "thik", "thakbe", "koro", "korbo", "e"]);
   const hinglishWords = new Set(["main", "mein", "mujhe", "tum", "aap", "mera", "meri", "mujhse", "kya", "kaise", "hai", "hoon", "nahi", "karna", "kar", "jana", "jao", "kal", "abhi", "bhai", "theek", "kyun"]);
-  if (words.some((word) => banglishWords.has(word))) return "bn-IN";
-  if (words.some((word) => hinglishWords.has(word))) return "hi-IN";
+  const banglishScore = words.filter((word) => banglishWords.has(word)).length;
+  const hinglishScore = words.filter((word) => hinglishWords.has(word)).length;
+  if (banglishScore > hinglishScore && banglishScore > 0) return "bn-IN";
+  if (hinglishScore > 0) return "hi-IN";
   return "en-IN";
 }
 
-const romanizedBengali: Record<string, string> = { ami: "আমি", amra: "আমরা", tumi: "তুমি", tomar: "তোমার", amar: "আমার", apni: "আপনি", kemon: "কেমন", achi: "আছি", bhalo: "ভালো", ekhane: "এখানে", okhane: "ওখানে", jabo: "যাবো", jacchi: "যাচ্ছি", asbo: "আসবো", shuno: "শোনো", bolo: "বলো", kotha: "কথা", keno: "কেন", ki: "কি", na: "না", hobe: "হবে", kore: "করে" };
+const romanizedBengali: Record<string, string> = { ami: "আমি", amra: "আমরা", tumi: "তুমি", tomake: "তোমাকে", tomar: "তোমার", amar: "আমার", apni: "আপনি", apnake: "আপনাকে", kemon: "কেমন", acho: "আছো", achi: "আছি", bhalo: "ভালো", bhalobashi: "ভালোবাসি", ekhane: "এখানে", okhane: "ওখানে", kothay: "কোথায়", jabo: "যাবো", jacchi: "যাচ্ছি", asbo: "আসবো", aschi: "আসছি", ekhuni: "এখনই", ekhon: "এখন", shuno: "শোনো", bolo: "বলো", korcho: "করছো", korchi: "করছি", kotha: "কথা", keno: "কেন", ki: "কি", na: "না", hobe: "হবে", kore: "করে", parbo: "পারবো", parena: "পারেনা", lagbe: "লাগবে", dorkar: "দরকার", dhonnobad: "ধন্যবাদ", please: "প্লিজ", aj: "আজ", kal: "কাল", rat: "রাত", sokal: "সকাল", bari: "বাড়ি", kaj: "কাজ", khabar: "খাবার", pani: "পানি", phone: "ফোন", message: "মেসেজ", whatsapp: "হোয়াটসঅ্যাপ", call: "কল", meeting: "মিটিং", asho: "এসো", jao: "যাও", thik: "ঠিক", thakbe: "থাকবে", koro: "করো", "tomar sathe": "তোমার সাথে", e: "এ" };
 const romanizedHindi: Record<string, string> = { main: "मैं", mein: "में", mujhe: "मुझे", tum: "तुम", aap: "आप", mera: "मेरा", meri: "मेरी", mujhse: "मुझसे", kya: "क्या", kaise: "कैसे", hai: "है", hoon: "हूँ", nahi: "नहीं", karna: "करना", kar: "कर", jana: "जाना", jao: "जाओ", kal: "कल", abhi: "अभी", bhai: "भाई", theek: "ठीक", kyun: "क्यों" };
+
+const romanizedBengaliPhrases: Array<[RegExp, string]> = [
+  [/\bami tomake bhalobashi\b/gi, "আমি তোমাকে ভালোবাসি"],
+  [/\bami bhalo achi\b/gi, "আমি ভালো আছি"],
+  [/\bkemon acho\b/gi, "কেমন আছো"],
+  [/\btumi kemon acho\b/gi, "তুমি কেমন আছো"],
+  [/\bki korcho\b/gi, "কি করছো"],
+  [/\btumi kothay\b/gi, "তুমি কোথায়"],
+  [/\bami ekhane achi\b/gi, "আমি এখানে আছি"],
+  [/\beikhuni aschi\b/gi, "এইখুনি আসছি"],
+  [/\bami tomake phone korbo\b/gi, "আমি তোমাকে ফোন করবো"],
+];
 
 function prepareRomanizedSegment(text: string, language: SpeechLanguage) {
   const dictionary = language === "bn-IN" ? romanizedBengali : language === "hi-IN" ? romanizedHindi : undefined;
   if (!dictionary) return text;
-  return text.replace(/\b[a-z]+\b/gi, (word) => dictionary[word.toLowerCase()] ?? word);
+  let prepared = text;
+  for (const [pattern, replacement] of language === "bn-IN" ? romanizedBengaliPhrases : []) prepared = prepared.replace(pattern, replacement);
+  return prepared.replace(/\b[a-z]+\b/gi, (word) => dictionary[word.toLowerCase()] ?? word);
 }
 
 export function speechSegments(text: string) {

@@ -63,6 +63,8 @@ describe("message filtering", () => {
       { language: "bn-IN", text: "আমি এখানে আছি," },
       { language: "en-IN", text: "call me later" },
     ]);
+    expect(speechSegments("ami tomake bhalobashi")).toEqual([{ language: "bn-IN", text: "আমি তোমাকে ভালোবাসি" }]);
+    expect(speechSegments("whatsapp e message koro")).toEqual([{ language: "bn-IN", text: "হোয়াটসঅ্যাপ এ মেসেজ করো" }]);
   });
 
   it("falls back to the system voice when a saved voice is unavailable", () => {

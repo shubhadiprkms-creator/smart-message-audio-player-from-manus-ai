@@ -2,6 +2,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { NativeModules, Platform } from "react-native";
 
 import { normalizeForSpeech } from "./message-store";
+import { connectEsp32, deliverMessageOverBle, scanForEsp32, sendWavOverBle } from "./ble";
 
 export type Esp32Result = { ok: true; detail: string } | { ok: false; detail: string };
 
@@ -73,3 +74,12 @@ export async function deliverMessage(baseUrl: string, text: string, id: string, 
   const wavUri = await synthesizeToWavWithRate(text, `smart-message-${id}.wav`, rate);
   return sendWavToEsp32(baseUrl, wavUri);
 }
+
+export async function deliverMessageBluetooth(deviceId: string, text: string, id: string, rate: 0.5 | 1 | 2 = 1): Promise<Esp32Result> {
+  if (Platform.OS === "web") return { ok: false, detail: "Direct Bluetooth delivery requires the Android/iOS app build." };
+  if (!deviceId) return { ok: false, detail: "Pair an ESP32 speaker in Settings before sending." };
+  const wavUri = await synthesizeToWavWithRate(text, `smart-message-${id}.wav`, rate);
+  return deliverMessageOverBle(deviceId, wavUri);
+}
+
+export { connectEsp32, scanForEsp32, sendWavOverBle };

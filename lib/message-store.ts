@@ -14,6 +14,7 @@ export type PendingMessage = {
 export type AppSettings = {
   esp32BaseUrl: string;
   connectionMode: "bluetooth" | "wifi";
+  bluetoothDeviceId: string;
   bluetoothDeviceName: string;
   notificationAccessEnabled: boolean;
   ttsVoiceId: string;
@@ -27,6 +28,7 @@ const SETTINGS_KEY = "smart-message-audio.settings.v1";
 export const DEFAULT_SETTINGS: AppSettings = {
   esp32BaseUrl: "http://192.168.1.50:8080",
   connectionMode: "bluetooth",
+  bluetoothDeviceId: "",
   bluetoothDeviceName: "ESP32 speaker",
   notificationAccessEnabled: false,
   ttsVoiceId: "",
@@ -72,6 +74,12 @@ export function normalizeForSpeech(text: string) {
 }
 
 export type SpeechLanguage = "en-IN" | "bn-IN" | "hi-IN";
+
+export type AvailableVoice = { identifier: string };
+
+export function resolveVoiceId(savedVoiceId: string, voices: AvailableVoice[]) {
+  return savedVoiceId && voices.some((voice) => voice.identifier === savedVoiceId) ? savedVoiceId : "";
+}
 
 export function languageForSpeech(text: string): SpeechLanguage {
   if (/[\u0980-\u09FF]/.test(text)) return "bn-IN";

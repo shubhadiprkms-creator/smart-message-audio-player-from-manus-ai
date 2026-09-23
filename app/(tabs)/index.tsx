@@ -17,13 +17,14 @@ import {
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { checkEsp32, deliverMessage } from "@/lib/esp32";
+import { checkEsp32, connectEsp32, deliverMessage, deliverMessageBluetooth } from "@/lib/esp32";
 import {
   DEFAULT_SETTINGS,
   createManualMessage,
   loadMessages,
   loadSettings,
   previewForSpeech,
+  resolveVoiceId,
   removeMessage,
   saveMessages,
   saveSettings,
@@ -127,10 +128,13 @@ export default function HomeScreen() {
 
   const connect = async () => {
     setStatus("connecting");
-    setStatusDetail("Open Settings to pair the ESP32 speaker with phone Bluetooth.");
-    router.push("/settings" as never);
-    setStatus("unknown");
-    const result = await checkEsp32(settings.esp32BaseUrl);
+    if (!settings.bluetoothDeviceId) {
+      setStatusDetail("Choose Scan for ESP32 in Settings to pair the speaker.");
+      router.push("/settings" as never);
+      setStatus("unknown");
+      return;
+    }
+    const result = await connectEsp32(settings.bluetoothDeviceId);
     if (result.ok) setStatusDetail("Bluetooth pairing is ready; Wi-Fi fallback also responds.");
     if (Platform.OS !== "web") {
       await Haptics.notificationAsync(result.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
@@ -142,22 +146,29 @@ export default function HomeScreen() {
     const run = ++previewRun.current;
     await Speech.stop();
     setPreviewingId(message.id);
+    const availableVoices = await Speech.getAvailableVoicesAsync().catch(() => []);
+    const voiceId = resolveVoiceId(settings.ttsVoiceId, availableVoices);
     const segments = speechSegments(previewForSpeech(message.text, settings.speechRate));
     let segmentIndex = 0;
-    const speakNext = () => {
+    const speakNext = (useSelectedVoice = true) => {
       if (run !== previewRun.current || segmentIndex >= segments.length) {
         if (run === previewRun.current) setPreviewingId(null);
         return;
       }
       const segment = segments[segmentIndex++];
-      Speech.speak(segment.text, {
+      const speakOptions = {
         language: segment.language,
-        rate: settings.speechRate,
-        ...(settings.ttsVoiceId ? { voice: settings.ttsVoiceId } : {}),
+        rate: Math.max(0.5, Math.min(2, settings.speechRate)),
+        ...(useSelectedVoice && voiceId ? { voice: voiceId } : {}),
         onDone: () => { if (run === previewRun.current) setTimeout(speakNext, 40); },
         onStopped: () => { if (run === previewRun.current) setPreviewingId(null); },
-        onError: () => { if (run === previewRun.current) setPreviewingId(null); },
-      });
+        onError: () => {
+          if (run !== previewRun.current) return;
+          if (useSelectedVoice && voiceId) { Speech.stop(); speakNext(false); }
+          else setPreviewingId(null);
+        },
+      } as Speech.SpeechOptions;
+      Speech.speak(segment.text, speakOptions);
     };
     speakNext();
     previewTimeout.current = setTimeout(async () => {
@@ -175,7 +186,9 @@ export default function HomeScreen() {
     setMessages(sending);
     await saveMessages(sending);
     try {
-      const result = await deliverMessage(settings.esp32BaseUrl, message.text, message.id, settings.speechRate);
+      const result = settings.connectionMode === "bluetooth"
+        ? await deliverMessageBluetooth(settings.bluetoothDeviceId, message.text, message.id, settings.speechRate)
+        : await deliverMessage(settings.esp32BaseUrl, message.text, message.id, settings.speechRate);
       if (result.ok) {
         const remaining = sending.filter((item) => item.id !== message.id);
         setMessages(remaining);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, createManualMessage, isSummaryNotification, languageForSpeech, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, speechSegments, type PendingMessage } from "../lib/message-store";
+import { DEFAULT_SETTINGS, createManualMessage, isSummaryNotification, languageForSpeech, makeMessageId, normalizeForSpeech, previewForSpeech, removeMessage, resolveVoiceId, speechSegments, type PendingMessage } from "../lib/message-store";
 
 describe("message filtering", () => {
   it("ignores summaries and background checks", () => {
@@ -54,5 +54,10 @@ describe("message filtering", () => {
     expect(languageForSpeech("আমি এখানে আছি")).toBe("bn-IN");
     expect(languageForSpeech("मैं यहाँ हूँ")).toBe("hi-IN");
     expect(speechSegments("Ami এখানে আছি").map((segment) => segment.language)).toEqual(["en-IN", "bn-IN"]);
+  });
+
+  it("falls back to the system voice when a saved voice is unavailable", () => {
+    expect(resolveVoiceId("phone-voice", [{ identifier: "other-voice" }])).toBe("");
+    expect(resolveVoiceId("other-voice", [{ identifier: "other-voice" }])).toBe("other-voice");
   });
 });

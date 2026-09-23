@@ -87,6 +87,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "react-native-ble-plx",
     withSmartMessageAudio,
     [
       "expo-audio",

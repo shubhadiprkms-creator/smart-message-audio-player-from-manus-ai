@@ -146,9 +146,10 @@ export default function HomeScreen() {
     const run = ++previewRun.current;
     await Speech.stop();
     setPreviewingId(message.id);
+    const segments = speechSegments(previewForSpeech(message.text, settings.speechRate));
+
     const availableVoices = await Speech.getAvailableVoicesAsync().catch(() => []);
     const voiceId = resolveVoiceId(settings.ttsVoiceId, availableVoices);
-    const segments = speechSegments(previewForSpeech(message.text, settings.speechRate));
     let segmentIndex = 0;
     const speakNext = (useSelectedVoice = true) => {
       if (run !== previewRun.current || segmentIndex >= segments.length) {

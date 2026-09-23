@@ -50,10 +50,19 @@ describe("message filtering", () => {
   });
 
   it("routes Bengali, Hindi, and Latin mixed-language text to speech locales", () => {
-    expect(languageForSpeech("Ami ekhane achi, call me later")).toBe("en-IN");
+    expect(languageForSpeech("Ami ekhane achi, call me later")).toBe("bn-IN");
     expect(languageForSpeech("আমি এখানে আছি")).toBe("bn-IN");
     expect(languageForSpeech("मैं यहाँ हूँ")).toBe("hi-IN");
-    expect(speechSegments("Ami এখানে আছি").map((segment) => segment.language)).toEqual(["en-IN", "bn-IN"]);
+    expect(speechSegments("Ami এখানে আছি").map((segment) => segment.language)).toEqual(["bn-IN"]);
+  });
+
+  it("routes common Banglish and Hinglish phrases to regional offline voices", () => {
+    expect(languageForSpeech("Ami ekhane achi")).toBe("bn-IN");
+    expect(languageForSpeech("Main abhi ghar jao")).toBe("hi-IN");
+    expect(speechSegments("Ami ekhane achi, call me later")).toEqual([
+      { language: "bn-IN", text: "আমি এখানে আছি," },
+      { language: "en-IN", text: "call me later" },
+    ]);
   });
 
   it("falls back to the system voice when a saved voice is unavailable", () => {

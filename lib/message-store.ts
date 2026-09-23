@@ -84,28 +84,39 @@ export function resolveVoiceId(savedVoiceId: string, voices: AvailableVoice[]) {
 export function languageForSpeech(text: string): SpeechLanguage {
   if (/[\u0980-\u09FF]/.test(text)) return "bn-IN";
   if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
+  const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
+  const banglishWords = new Set(["ami", "amra", "tumi", "tomar", "amar", "apni", "kemon", "achi", "bhalo", "ekhane", "okhane", "jabo", "jacchi", "asbo", "shuno", "bolo", "kotha", "keno", "ki", "na", "hobe", "kore"]);
+  const hinglishWords = new Set(["main", "mein", "mujhe", "tum", "aap", "mera", "meri", "mujhse", "kya", "kaise", "hai", "hoon", "nahi", "karna", "kar", "jana", "jao", "kal", "abhi", "bhai", "theek", "kyun"]);
+  if (words.some((word) => banglishWords.has(word))) return "bn-IN";
+  if (words.some((word) => hinglishWords.has(word))) return "hi-IN";
   return "en-IN";
+}
+
+const romanizedBengali: Record<string, string> = { ami: "আমি", amra: "আমরা", tumi: "তুমি", tomar: "তোমার", amar: "আমার", apni: "আপনি", kemon: "কেমন", achi: "আছি", bhalo: "ভালো", ekhane: "এখানে", okhane: "ওখানে", jabo: "যাবো", jacchi: "যাচ্ছি", asbo: "আসবো", shuno: "শোনো", bolo: "বলো", kotha: "কথা", keno: "কেন", ki: "কি", na: "না", hobe: "হবে", kore: "করে" };
+const romanizedHindi: Record<string, string> = { main: "मैं", mein: "में", mujhe: "मुझे", tum: "तुम", aap: "आप", mera: "मेरा", meri: "मेरी", mujhse: "मुझसे", kya: "क्या", kaise: "कैसे", hai: "है", hoon: "हूँ", nahi: "नहीं", karna: "करना", kar: "कर", jana: "जाना", jao: "जाओ", kal: "कल", abhi: "अभी", bhai: "भाई", theek: "ठीक", kyun: "क्यों" };
+
+function prepareRomanizedSegment(text: string, language: SpeechLanguage) {
+  const dictionary = language === "bn-IN" ? romanizedBengali : language === "hi-IN" ? romanizedHindi : undefined;
+  if (!dictionary) return text;
+  return text.replace(/\b[a-z]+\b/gi, (word) => dictionary[word.toLowerCase()] ?? word);
 }
 
 export function speechSegments(text: string) {
   const normalized = normalizeForSpeech(text).trim();
   const segments: { text: string; language: SpeechLanguage }[] = [];
-  let currentLanguage: SpeechLanguage = "en-IN";
+  let currentLanguage: SpeechLanguage | null = null;
   let buffer = "";
-  for (const character of Array.from(normalized)) {
-    const characterLanguage: SpeechLanguage = /[\u0980-\u09FF]/.test(character)
-      ? "bn-IN"
-      : /[\u0900-\u097F]/.test(character)
-        ? "hi-IN"
-        : currentLanguage;
-    if (characterLanguage !== currentLanguage && buffer.trim()) {
-      segments.push({ text: buffer.trim(), language: currentLanguage });
+  for (const token of normalized.split(/(\s+)/)) {
+    if (/^\s+$/.test(token)) { buffer += token; continue; }
+    const tokenLanguage = languageForSpeech(token);
+    if (currentLanguage && tokenLanguage !== currentLanguage && buffer.trim()) {
+      segments.push({ text: prepareRomanizedSegment(buffer.trim(), currentLanguage), language: currentLanguage });
       buffer = "";
     }
-    currentLanguage = characterLanguage;
-    buffer += character;
+    currentLanguage = tokenLanguage;
+    buffer += token;
   }
-  if (buffer.trim()) segments.push({ text: buffer.trim(), language: currentLanguage });
+  if (buffer.trim() && currentLanguage) segments.push({ text: prepareRomanizedSegment(buffer.trim(), currentLanguage), language: currentLanguage });
   return segments;
 }
 
